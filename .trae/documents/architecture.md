@@ -12,8 +12,8 @@ flowchart TB
     
     subgraph Backend["后端服务层"]
         B1["Go HTTP服务器"]
-        B2["路由控制"]
-        B3["中间件层"]
+        B2["请求中间件层"]
+        B3["路由控制"]
     end
     
     subgraph Services["业务服务层"]
@@ -23,9 +23,17 @@ flowchart TB
         C4["社区服务"]
     end
     
+    subgraph Cache["缓存层"]
+        CA1["内存缓存 FreeCache"]
+    end
+    
     subgraph Data["数据层"]
-        D1["SQLite数据库"]
-        D2["文件存储"]
+        D1["SQLite数据库<br/>承载全部业务表"]
+        D2["文件存储<br/>PDF报告/图片/静态资源"]
+    end
+    
+    subgraph ExternalAdapter["第三方调用中间件"]
+        EA1["统一外部服务封装"]
     end
     
     subgraph External["外部服务"]
@@ -42,13 +50,17 @@ flowchart TB
     B3 --> C2
     B3 --> C3
     B3 --> C4
-    C1 --> D1
-    C2 --> D1
-    C3 --> E1
-    C3 --> D1
-    C4 --> D1
-    C1 --> E2
+    C1 --> CA1
+    C2 --> CA1
+    C3 --> CA1
+    C4 --> CA1
+    CA1 --> D1
+    C1 --> EA1
+    C3 --> EA1
+    EA1 --> E1
+    EA1 --> E2
     C2 --> D2
+    C3 --> D2
 ```
 
 ## 2. 技术栈说明
@@ -65,10 +77,12 @@ flowchart TB
 ### 2.2 后端技术栈
 - **语言**: Go 1.21+
 - **Web框架**: Gin
-- **数据库**: SQLite (轻量化部署)
+- **数据库**: SQLite (轻量化部署，承载用户、对话、命理、社区全部业务表)
 - **ORM**: GORM
 - **认证**: JWT
+- **缓存**: FreeCache (内存缓存，缓存八字排盘、五行数据、AI对话上下文)
 - **AI集成**: OpenAI API兼容接口
+- **第三方调用中间件**: 统一封装AI、短信、邮件服务调用
 
 ### 2.3 开发工具
 - **构建工具**: Vite
@@ -324,7 +338,7 @@ flowchart LR
     subgraph Server["服务器"]
         B["Gin Router"]
         
-        subgraph Middleware["中间件"]
+        subgraph RequestMiddleware["请求中间件层"]
             C1["CORS"]
             C2["Auth"]
             C3["Logger"]
@@ -349,6 +363,14 @@ flowchart LR
             E6["CommunityService"]
         end
         
+        subgraph CacheLayer["缓存层"]
+            CA["FreeCache"]
+        end
+        
+        subgraph ExternalAdapter["第三方调用中间件"]
+            EA["统一外部服务封装"]
+        end
+        
         subgraph Repositories["数据层"]
             F1["UserRepo"]
             F2["BirthInfoRepo"]
@@ -359,13 +381,13 @@ flowchart LR
     end
     
     subgraph Storage["存储"]
-        G["SQLite"]
-        H["文件系统"]
+        G["SQLite<br/>全部业务表"]
+        H["文件系统<br/>PDF/图片"]
     end
     
     subgraph External["外部服务"]
         I["AI API"]
-        J["短信服务"]
+        J["短信/邮件服务"]
     end
     
     A --> B
@@ -377,17 +399,20 @@ flowchart LR
     D4 --> E4
     D5 --> E5
     D6 --> E6
-    E1 --> F1
-    E2 --> F1
-    E3 --> F2
-    E4 --> F3
-    E5 --> F4
-    E6 --> F5
+    E1 --> CA
+    E2 --> CA
+    E3 --> CA
+    E4 --> CA
+    E5 --> CA
+    E6 --> CA
+    CA --> F1 & F2 & F3 & F4 & F5
     F1 & F2 & F3 & F4 & F5 --> G
     E3 --> H
     E5 --> H
-    E4 --> I
-    E1 --> J
+    E1 --> EA
+    E4 --> EA
+    EA --> I
+    EA --> J
 ```
 
 ## 6. 数据模型
@@ -643,9 +668,15 @@ lingxi-fortune/
 │   │   ├── report.go           # 报告处理器
 │   │   └── community.go        # 社区处理器
 │   ├── middleware/
-│   │   ├── auth.go             # 认证中间件
-│   │   ├── cors.go             # CORS中间件
-│   │   └── logger.go           # 日志中间件
+│   │   ├── request/            # 请求中间件层
+│   │   │   ├── auth.go         # 认证中间件
+│   │   │   ├── cors.go         # CORS中间件
+│   │   │   ├── logger.go       # 日志中间件
+│   │   │   └── recovery.go     # 恢复中间件
+│   │   └── external/           # 第三方调用中间件
+│   │       ├── adapter.go      # 统一外部服务封装
+│   │       ├── ai.go           # AI服务封装
+│   │       └── notification.go # 短信邮件封装
 │   ├── model/
 │   │   ├── user.go             # 用户模型
 │   │   ├── birth_info.go       # 生辰信息模型
@@ -669,12 +700,15 @@ lingxi-fortune/
 │       ├── jwt.go             # JWT工具
 │       ├── response.go        # 响应工具
 │       └── validator.go       # 验证工具
+│       └── cache.go           # 缓存工具
 ├── pkg/
 │   ├── bazi/
 │   │   ├── calculator.go      # 八字计算
 │   │   ├── wuxing.go          # 五行分析
 │   │   ├── shishen.go         # 十神分析
 │   │   └── dayun.go           # 大运推演
+│   ├── cache/
+│   │   └── freecache.go       # FreeCache封装
 │   └── ai/
 │       └── client.go          # AI客户端
 ├── web/
@@ -693,7 +727,11 @@ lingxi-fortune/
 │   ├── vite.config.ts        # Vite配置
 │   └── tailwind.config.js    # Tailwind配置
 ├── data/
-│   └── lingxi.db             # SQLite数据库
+│   └── lingxi.db             # SQLite数据库(全部业务表)
+├── storage/
+│   ├── reports/              # PDF命理报告存储
+│   ├── images/               # 用户上传图片
+│   └── static/               # 静态资源文件
 ├── .env                      # 环境变量
 ├── go.mod                    # Go模块
 ├── go.sum                    # Go依赖
