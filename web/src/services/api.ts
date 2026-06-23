@@ -106,24 +106,6 @@ export const api = {
       request({ method: 'DELETE', url: `/chat/conversation/${id}` }),
   },
 
-  // 社区相关
-  community: {
-    getPosts: (page = 1, limit = 10) =>
-      request({ method: 'GET', url: '/community/posts', params: { page, limit } }),
-
-    getPost: (id: string) =>
-      request({ method: 'GET', url: `/community/post/${id}` }),
-
-    createPost: (data: { title: string; content: string; tags: string[] }) =>
-      request({ method: 'POST', url: '/community/post', data }),
-
-    likePost: (id: string) =>
-      request({ method: 'POST', url: `/community/post/${id}/like` }),
-
-    commentPost: (id: string, content: string) =>
-      request({ method: 'POST', url: `/community/post/${id}/comment`, data: { content } }),
-  },
-
   // 用户中心
   user: {
     getBadges: () => request({ method: 'GET', url: '/user/badges' }),

@@ -22,7 +22,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	baziHandler := handlers.NewBaziHandler()
 	chatHandler := handlers.NewChatHandler(cfg)
 	reportHandler := handlers.NewReportHandler(cfg)
-	communityHandler := handlers.NewCommunityHandler()
 
 	// API路由组
 	api := r.Group("/api")
@@ -72,24 +71,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			authorized.GET("/reports", reportHandler.GetReportList)
 			authorized.GET("/report/:reportId", reportHandler.GetReport)
 			authorized.DELETE("/report/:reportId", reportHandler.DeleteReport)
-		}
-
-		// 社区功能（统一鉴权）
-		community := api.Group("/community")
-		community.Use(request.Auth())
-		{
-			community.GET("/posts", communityHandler.GetPostList)
-			community.GET("/post/:postId", communityHandler.GetPost)
-			community.GET("/user/:userId/posts", communityHandler.GetUserPosts)
-			community.GET("/user/:userId/badges", communityHandler.GetUserBadges)
-			community.POST("/post", communityHandler.CreatePost)
-			community.DELETE("/post/:postId", communityHandler.DeletePost)
-			community.POST("/post/:postId/like", communityHandler.LikePost)
-			community.POST("/post/:postId/comment", communityHandler.CreateComment)
-			community.DELETE("/comment/:commentId", communityHandler.DeleteComment)
-			community.POST("/comment/:commentId/like", communityHandler.LikeComment)
-			// 管理员
-			community.POST("/badge", request.AdminOnly(), communityHandler.AwardBadge)
 		}
 
 		// 健康检查

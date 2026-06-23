@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Sparkles, Calendar, MessageCircle, FileText, Users, Compass } from 'lucide-react';
+import { Sparkles, Calendar, MessageCircle, FileText, Compass, Award } from 'lucide-react';
 import { StarParticles } from '@/components';
 
 const features = [
@@ -33,10 +33,10 @@ const features = [
     color: 'from-primary-300 to-primary',
   },
   {
-    icon: Users,
-    title: '命理社区',
-    description: '与同道中人交流，分享心得体会',
-    path: '/community',
+    icon: Award,
+    title: '成就系统',
+    description: '完成测算任务，解锁专属命理勋章',
+    path: '/profile',
     color: 'from-gold to-primary',
   },
   {

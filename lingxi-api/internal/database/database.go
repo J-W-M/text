@@ -37,10 +37,6 @@ func Init(cfg *config.Config) error {
 		&models.ChatSession{},
 		&models.ChatMessage{},
 		&models.FortuneReport{},
-		&models.CommunityPost{},
-		&models.PostComment{},
-		&models.PostLike{},
-		&models.CommentLike{},
 		&models.UserBadge{},
 	)
 	if err != nil {

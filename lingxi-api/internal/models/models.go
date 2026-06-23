@@ -88,54 +88,6 @@ type FortuneReport struct {
 	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
-// CommunityPost 社区帖子表
-type CommunityPost struct {
-	ID          uint           `json:"id" gorm:"primaryKey"`
-	UserID      uint           `json:"userId" gorm:"index;not null"`
-	Title       string         `json:"title" gorm:"size:100;not null"`
-	Content     string         `json:"content" gorm:"type:text;not null"`
-	Category    string         `json:"category" gorm:"size:20;default:general"` // general, bazi, fortune, question
-	ViewCount   int            `json:"viewCount" gorm:"default:0"`
-	LikeCount   int            `json:"likeCount" gorm:"default:0"`
-	CommentCount int           `json:"commentCount" gorm:"default:0"`
-	Status      int            `json:"status" gorm:"default:1"` // 0:隐藏 1:正常 2:置顶
-	CreatedAt   time.Time      `json:"createdAt"`
-	UpdatedAt   time.Time      `json:"updatedAt"`
-	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
-	User        *User          `json:"user,omitempty" gorm:"foreignKey:UserID"`
-}
-
-// PostComment 帖子评论表
-type PostComment struct {
-	ID        uint           `json:"id" gorm:"primaryKey"`
-	PostID    uint           `json:"postId" gorm:"index;not null"`
-	UserID    uint           `json:"userId" gorm:"index;not null"`
-	ParentID  uint           `json:"parentId" gorm:"default:0"` // 回复的评论ID，0表示一级评论
-	Content   string         `json:"content" gorm:"type:text;not null"`
-	LikeCount int            `json:"likeCount" gorm:"default:0"`
-	Status    int            `json:"status" gorm:"default:1"` // 0:隐藏 1:正常
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
-	User      *User          `json:"user,omitempty" gorm:"foreignKey:UserID"`
-}
-
-// PostLike 帖子点赞表
-type PostLike struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	PostID    uint      `json:"postId" gorm:"index;not null"`
-	UserID    uint      `json:"userId" gorm:"index;not null"`
-	CreatedAt time.Time `json:"createdAt"`
-}
-
-// CommentLike 评论点赞表
-type CommentLike struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	CommentID uint      `json:"commentId" gorm:"index;not null"`
-	UserID    uint      `json:"userId" gorm:"index;not null"`
-	CreatedAt time.Time `json:"createdAt"`
-}
-
 // UserBadge 用户勋章表
 type UserBadge struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`

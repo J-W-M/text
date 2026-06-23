@@ -10,7 +10,6 @@ import {
   Login,
   Register,
   Profile,
-  Community,
 } from '@/pages';
 
 // 公开页面列表（无需登录可访问）
@@ -152,14 +151,6 @@ function RouteContent() {
           element={
             <AnimatedPage>
               <Profile />
-            </AnimatedPage>
-          }
-        />
-        <Route
-          path="/community"
-          element={
-            <AnimatedPage>
-              <Community />
             </AnimatedPage>
           }
         />

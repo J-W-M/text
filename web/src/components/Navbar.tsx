@@ -15,7 +15,6 @@ export default function Navbar() {
     { path: '/birth-input', label: '八字排盘' },
     { path: '/chat', label: 'AI对话' },
     { path: '/report', label: '命理报告' },
-    { path: '/community', label: '社区' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
