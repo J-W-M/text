@@ -74,25 +74,22 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			authorized.DELETE("/report/:reportId", reportHandler.DeleteReport)
 		}
 
-		// 社区功能（部分需要登录）
+		// 社区功能（统一鉴权）
 		community := api.Group("/community")
+		community.Use(request.Auth())
 		{
-			// 公开接口
 			community.GET("/posts", communityHandler.GetPostList)
-			community.GET("/post/:postId", request.OptionalAuth(), communityHandler.GetPost)
+			community.GET("/post/:postId", communityHandler.GetPost)
 			community.GET("/user/:userId/posts", communityHandler.GetUserPosts)
 			community.GET("/user/:userId/badges", communityHandler.GetUserBadges)
-
-			// 需要登录
-			community.POST("/post", request.Auth(), communityHandler.CreatePost)
-			community.DELETE("/post/:postId", request.Auth(), communityHandler.DeletePost)
-			community.POST("/post/:postId/like", request.Auth(), communityHandler.LikePost)
-			community.POST("/post/:postId/comment", request.Auth(), communityHandler.CreateComment)
-			community.DELETE("/comment/:commentId", request.Auth(), communityHandler.DeleteComment)
-			community.POST("/comment/:commentId/like", request.Auth(), communityHandler.LikeComment)
-
+			community.POST("/post", communityHandler.CreatePost)
+			community.DELETE("/post/:postId", communityHandler.DeletePost)
+			community.POST("/post/:postId/like", communityHandler.LikePost)
+			community.POST("/post/:postId/comment", communityHandler.CreateComment)
+			community.DELETE("/comment/:commentId", communityHandler.DeleteComment)
+			community.POST("/comment/:commentId/like", communityHandler.LikeComment)
 			// 管理员
-			community.POST("/badge", request.Auth(), request.AdminOnly(), communityHandler.AwardBadge)
+			community.POST("/badge", request.AdminOnly(), communityHandler.AwardBadge)
 		}
 
 		// 健康检查

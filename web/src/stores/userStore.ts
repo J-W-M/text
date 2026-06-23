@@ -1,10 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 export interface User {
-  id: string;
+  id: number;
   username: string;
-  email: string;
+  email?: string;
+  phone?: string;
+  nickname?: string;
   avatar?: string;
   points: number;
   level: number;
@@ -39,13 +44,14 @@ interface UserState {
   // Actions
   setUser: (user: User | null) => void;
   setProfile: (profile: Partial<UserProfile>) => void;
-  login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string, email?: string, phone?: string) => Promise<void>;
   logout: () => void;
   updatePoints: (points: number) => void;
   addBadge: (badge: Badge) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  checkAuth: () => Promise<void>;
 }
 
 export const useUserStore = create<UserState>()(
@@ -63,65 +69,85 @@ export const useUserStore = create<UserState>()(
         profile: { ...state.profile, ...profile } 
       })),
 
-      login: async (email: string, _password: string) => {
+      login: async (username: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+            username,
+            password,
+          });
           
-          // Mock user data
-          const mockUser: User = {
-            id: '1',
-            username: email.split('@')[0],
-            email,
-            points: 1000,
-            level: 5,
-            badges: [
-              {
-                id: '1',
-                name: '初入命理',
-                description: '完成首次八字排盘',
-                icon: '🌟',
-                earnedAt: new Date().toISOString(),
-              }
-            ],
-            createdAt: new Date().toISOString(),
+          const { token, user: userData } = response.data.data;
+          
+          // 保存Token
+          localStorage.setItem('token', token);
+          
+          const user: User = {
+            id: userData.id,
+            username: userData.username,
+            email: userData.email,
+            phone: userData.phone,
+            nickname: userData.nickname,
+            avatar: userData.avatar,
+            points: userData.points || 0,
+            level: userData.level || 1,
+            badges: [],
+            createdAt: userData.createdAt,
           };
           
-          set({ user: mockUser, isAuthenticated: true, isLoading: false });
-        } catch (error) {
-          set({ error: '登录失败，请检查邮箱和密码', isLoading: false });
+          set({ user, isAuthenticated: true, isLoading: false });
+        } catch (error: any) {
+          const message = error.response?.data?.message || '登录失败，请检查用户名和密码';
+          set({ error: message, isLoading: false });
+          throw error;
         }
       },
 
-      register: async (username: string, email: string, _password: string) => {
+      register: async (username: string, password: string, email?: string, phone?: string) => {
         set({ isLoading: true, error: null });
         try {
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          const mockUser: User = {
-            id: Date.now().toString(),
+          const response = await axios.post(`${API_BASE_URL}/auth/register`, {
             username,
+            password,
             email,
-            points: 100,
+            phone,
+          });
+          
+          const { token, user: userData } = response.data.data;
+          
+          // 保存Token
+          localStorage.setItem('token', token);
+          
+          const user: User = {
+            id: userData.id,
+            username: userData.username,
+            email: userData.email,
+            phone: userData.phone,
+            nickname: userData.nickname,
+            avatar: userData.avatar,
+            points: 100, // 新用户赠送积分
             level: 1,
             badges: [],
-            createdAt: new Date().toISOString(),
+            createdAt: userData.createdAt,
           };
           
-          set({ user: mockUser, isAuthenticated: true, isLoading: false });
-        } catch (error) {
-          set({ error: '注册失败，请稍后重试', isLoading: false });
+          set({ user, isAuthenticated: true, isLoading: false });
+        } catch (error: any) {
+          const message = error.response?.data?.message || '注册失败，请稍后重试';
+          set({ error: message, isLoading: false });
+          throw error;
         }
       },
 
-      logout: () => set({ 
-        user: null, 
-        profile: {}, 
-        isAuthenticated: false,
-        error: null 
-      }),
+      logout: () => {
+        localStorage.removeItem('token');
+        set({ 
+          user: null, 
+          profile: {}, 
+          isAuthenticated: false,
+          error: null 
+        });
+      },
 
       updatePoints: (points) => set((state) => ({
         user: state.user ? { ...state.user, points: state.user.points + points } : null
@@ -135,6 +161,39 @@ export const useUserStore = create<UserState>()(
 
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
+      
+      checkAuth: async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          set({ isAuthenticated: false, user: null });
+          return;
+        }
+        
+        try {
+          const response = await axios.get(`${API_BASE_URL}/user/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          const userData = response.data.data;
+          const user: User = {
+            id: userData.id,
+            username: userData.username,
+            email: userData.email,
+            phone: userData.phone,
+            nickname: userData.nickname,
+            avatar: userData.avatar,
+            points: userData.points || 0,
+            level: userData.level || 1,
+            badges: [],
+            createdAt: userData.createdAt,
+          };
+          
+          set({ user, isAuthenticated: true });
+        } catch (error) {
+          localStorage.removeItem('token');
+          set({ isAuthenticated: false, user: null });
+        }
+      },
     }),
     {
       name: 'user-storage',

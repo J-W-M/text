@@ -1,8 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect } from 'react';
+import { useUserStore } from '@/stores';
 import { Navbar } from '@/components';
 import {
-  Home,
   BirthInput,
   Chat,
   Report,
@@ -11,6 +12,9 @@ import {
   Profile,
   Community,
 } from '@/pages';
+
+// 公开页面列表（无需登录可访问）
+const publicPages = ['/login', '/register'];
 
 // 页面切换动画配置
 const pageVariants = {
@@ -51,19 +55,56 @@ function AnimatedPage({ children }: { children: React.ReactNode }) {
   );
 }
 
+// 路由守卫组件
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useUserStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // 如果未登录且不是公开页面，跳转登录页
+    if (!isAuthenticated && !publicPages.includes(location.pathname)) {
+      navigate('/login', { replace: true });
+    }
+    // 如果已登录且访问登录/注册页，跳转首页
+    if (isAuthenticated && publicPages.includes(location.pathname)) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, location.pathname, navigate]);
+
+  // 未登录且不在公开页面，显示加载状态
+  if (!isAuthenticated && !publicPages.includes(location.pathname)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-cream">加载中...</div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 // 路由内容组件
 function RouteContent() {
   const location = useLocation();
+  const { isAuthenticated } = useUserStore();
 
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
+        {/* 默认首页 = 登录页 */}
         <Route
           path="/"
           element={
-            <AnimatedPage>
-              <Home />
-            </AnimatedPage>
+            isAuthenticated ? (
+              <AnimatedPage>
+                <Profile />
+              </AnimatedPage>
+            ) : (
+              <AnimatedPage>
+                <Login />
+              </AnimatedPage>
+            )
           }
         />
         <Route
@@ -122,29 +163,21 @@ function RouteContent() {
             </AnimatedPage>
           }
         />
-        {/* 404页面 */}
-        <Route
-          path="*"
-          element={
-            <AnimatedPage>
-              <div className="min-h-screen flex items-center justify-center px-4">
-                <div className="text-center">
-                  <h1 className="font-serif text-6xl text-gradient-gold mb-4">404</h1>
-                  <p className="text-cream/60 mb-8">页面不存在</p>
-                  <a href="/" className="btn-primary ripple">
-                    返回首页
-                  </a>
-                </div>
-              </div>
-            </AnimatedPage>
-          }
-        />
+        {/* 重定向到首页 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
   );
 }
 
 export default function App() {
+  const { checkAuth } = useUserStore();
+  
+  // 页面加载时验证登录状态
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+  
   return (
     <Router>
       <div className="min-h-screen bg-gradient-dark relative">
