@@ -20,7 +20,6 @@ flowchart TB
         C1["用户服务"]
         C2["命理服务"]
         C3["AI对话服务"]
-        C4["社区服务"]
     end
     
     subgraph Cache["缓存层"]
@@ -49,11 +48,9 @@ flowchart TB
     B3 --> C1
     B3 --> C2
     B3 --> C3
-    B3 --> C4
     C1 --> CA1
     C2 --> CA1
     C3 --> CA1
-    C4 --> CA1
     CA1 --> D1
     C1 --> EA1
     C3 --> EA1
@@ -102,7 +99,6 @@ flowchart TB
 | `/login` | 登录页 | 用户登录 |
 | `/register` | 注册页 | 用户注册 |
 | `/profile` | 用户中心 | 个人档案、积分勋章 |
-| `/community` | 社区页 | 帖子列表、互动交流 |
 
 ### 3.2 后端API路由
 
@@ -126,11 +122,6 @@ flowchart TB
 | `/api/report/generate` | POST | 生成命理报告 |
 | `/api/report/:id` | GET | 获取报告详情 |
 | `/api/report/list` | GET | 获取报告列表 |
-| `/api/community/posts` | GET | 获取帖子列表 |
-| `/api/community/posts` | POST | 创建帖子 |
-| `/api/community/posts/:id` | GET | 获取帖子详情 |
-| `/api/community/posts/:id/like` | POST | 点赞帖子 |
-| `/api/community/posts/:id/comment` | POST | 评论帖子 |
 
 ## 4. API接口定义
 
@@ -296,33 +287,17 @@ interface DayunPeriod {
 }
 ```
 
-### 4.5 社区相关
+### 4.5 用户勋章相关
 
 ```typescript
-// 社区帖子
-interface CommunityPost {
+// 用户勋章
+interface UserBadge {
   id: string;
   userId: string;
-  username: string;
-  userAvatar?: string;
-  title: string;
-  content: string;
-  tags: string[];
-  likes: number;
-  comments: number;
-  isLiked: boolean;
-  createdAt: string;
-}
-
-// 帖子评论
-interface PostComment {
-  id: string;
-  postId: string;
-  userId: string;
-  username: string;
-  userAvatar?: string;
-  content: string;
-  likes: number;
+  badgeType: string;
+  badgeName: string;
+  badgeIcon: string;
+  description: string;
   createdAt: string;
 }
 ```
@@ -351,7 +326,6 @@ flowchart LR
             D3["BaZiHandler"]
             D4["ChatHandler"]
             D5["ReportHandler"]
-            D6["CommunityHandler"]
         end
         
         subgraph Services["服务层"]
@@ -360,7 +334,6 @@ flowchart LR
             E3["BaZiService"]
             E4["ChatService"]
             E5["ReportService"]
-            E6["CommunityService"]
         end
         
         subgraph CacheLayer["缓存层"]
@@ -376,7 +349,6 @@ flowchart LR
             F2["BirthInfoRepo"]
             F3["ChatRepo"]
             F4["ReportRepo"]
-            F5["CommunityRepo"]
         end
     end
     
@@ -392,21 +364,19 @@ flowchart LR
     
     A --> B
     B --> C1 --> C2 --> C3 --> C4
-    C4 --> D1 & D2 & D3 & D4 & D5 & D6
+    C4 --> D1 & D2 & D3 & D4 & D5
     D1 --> E1
     D2 --> E2
     D3 --> E3
     D4 --> E4
     D5 --> E5
-    D6 --> E6
     E1 --> CA
     E2 --> CA
     E3 --> CA
     E4 --> CA
     E5 --> CA
-    E6 --> CA
-    CA --> F1 & F2 & F3 & F4 & F5
-    F1 & F2 & F3 & F4 & F5 --> G
+    CA --> F1 & F2 & F3 & F4
+    F1 & F2 & F3 & F4 --> G
     E3 --> H
     E5 --> H
     E1 --> EA
@@ -424,14 +394,10 @@ erDiagram
     User ||--o{ BirthInfo : has
     User ||--o{ ChatSession : has
     User ||--o{ FortuneReport : has
-    User ||--o{ CommunityPost : creates
-    User ||--o{ PostComment : writes
     User ||--o{ UserBadge : earns
     BirthInfo ||--o{ ChatSession : uses
     BirthInfo ||--o{ FortuneReport : generates
     ChatSession ||--o{ ChatMessage : contains
-    CommunityPost ||--o{ PostComment : has
-    CommunityPost ||--o{ PostLike : receives
     
     User {
         string id PK
@@ -484,34 +450,6 @@ erDiagram
         string session_id FK
         string type
         text content
-        datetime created_at
-    }
-    
-    CommunityPost {
-        string id PK
-        string user_id FK
-        string title
-        text content
-        string tags
-        int likes
-        int comments
-        datetime created_at
-        datetime updated_at
-    }
-    
-    PostComment {
-        string id PK
-        string post_id FK
-        string user_id FK
-        text content
-        int likes
-        datetime created_at
-    }
-    
-    PostLike {
-        string id PK
-        string post_id FK
-        string user_id FK
         datetime created_at
     }
     
