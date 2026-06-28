@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>语音识别</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --accent: #e8c47c;
+      --accent-dim: rgba(232, 196, 124, 0.15);
+      --text: #e8e4dc;
+      --text-muted: #6b6b7a;
+      --pulse: #e8c47c;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Serif SC', serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.08;
+      pointer-events: none;
+    }
+    .bg-orb-1 {
+      width: 500px;
+      height: 500px;
+      background: var(--accent);
+      top: -150px;
+      left: -100px;
+    }
+    .bg-orb-2 {
+      width: 400px;
+      height: 400px;
+      background: #c4a0e8;
+      bottom: -100px;
+      right: -80px;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 48px;
+      padding: 40px;
+      max-width: 680px;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.4rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .header p {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .mic-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mic-ring {
+      position: absolute;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      transition: all 0.4s ease;
+    }
+
+    .mic-ring.outer {
+      width: 200px;
+      height: 200px;
+      opacity: 0;
+    }
+
+    .mic-btn {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    .mic-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+      transform: scale(1.05);
+    }
+
+    .mic-btn:active {
+      transform: scale(0.97);
+    }
+
+    .mic-btn svg {
+      width: 44px;
+      height: 44px;
+      fill: none;
+      stroke: var(--text-muted);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 0.3s ease;
+    }
+
+    .mic-btn:hover svg {
+      stroke: var(--accent);
+    }
+
+    .mic-btn.listening {
+      border-color: var(--accent);
+      background: rgba(232, 196, 124, 0.08);
+    }
+
+    .mic-btn.listening svg {
+      stroke: var(--accent);
+      animation: micPulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes micPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 0.7; }
+    }
+
+    .listening .mic-ring.outer {
+      opacity: 1;
+      animation: ringExpand 2s ease-out infinite;
+    }
+
+    .listening .mic-ring.inner {
+      border-color: var(--accent);
+      opacity: 0.4;
+    }
+
+    @keyframes ringExpand {
+      0% { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .status {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      height: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background 0.3s ease;
+    }
+
+    .status.listening .dot {
+      background: var(--accent);
+      animation: dotPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .text-box {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      min-height: 180px;
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 28px 32px;
+      position: relative;
+      transition: border-color 0.3s ease;
+    }
+
+    .text-box:focus-within {
+      border-color: rgba(232, 196, 124, 0.3);
+    }
+
+    .text-box::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .text-box::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .text-box::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .text-content {
+      font-size: 1.15rem;
+      line-height: 2;
+      color: var(--text);
+      outline: none;
+      min-height: 120px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .text-content:empty::before {
+      content: attr(data-placeholder);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .placeholder-line {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-style: italic;
+    }
+
+    .placeholder-line svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--text-muted);
+      fill: none;
+      stroke-width: 1.5;
+      flex-shrink: 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 14px 24px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+    }
+
+    .action-btn:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+    }
+
+    .action-btn.danger:hover {
+      border-color: #e87c7c;
+      color: #e87c7c;
+    }
+
+    .action-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    .error-msg {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(232, 124, 124, 0.1);
+      border: 1px solid rgba(232, 124, 124, 0.3);
+      color: #e87c7c;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      padding: 12px 24px;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .error-msg.show {
+      opacity: 1;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .container > * {
+      animation: fadeIn 0.6s ease both;
+    }
+
+    .container > *:nth-child(1) { animation-delay: 0.05s; }
+    .container > *:nth-child(2) { animation-delay: 0.15s; }
+    .container > *:nth-child(3) { animation-delay: 0.25s; }
+    .container > *:nth-child(4) { animation-delay: 0.35s; }
+    .container > *:nth-child(5) { animation-delay: 0.45s; }
+  </style>
+</head>
+<body>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+
+  <div class="container">
+    <div class="header">
+      <h1>语音识别</h1>
+      <p>Speech Recognition</p>
+    </div>
+
+    <div class="mic-wrapper">
+      <div class="mic-ring outer"></div>
+      <div class="mic-ring inner"></div>
+      <button class="mic-btn" id="micBtn" title="点击开始识别">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="status" id="status">
+      <span class="dot"></span>
+      <span id="statusText">点击麦克风开始识别</span>
+    </div>
+
+    <div class="text-box">
+      <div
+        class="text-content"
+        id="textContent"
+        contenteditable="true"
+        data-placeholder="识别结果将显示在这里，可直接编辑..."
+        spellcheck="false"
+      ></div>
+    </div>
+
+    <div class="actions">
+      <button class="action-btn" id="copyBtn">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        复制
+      </button>
+      <button class="action-btn danger" id="clearBtn">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        清空
+      </button>
+    </div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <script>
+    const micBtn = document.getElementById('micBtn');
+    const status = document.getElementById('status');
+    const statusText = document.getElementById('statusText');
+    const textContent = document.getElementById('textContent');
+    const copyBtn = document.getElementById('copyBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const errorMsg = document.getElementById('errorMsg');
+
+    let recognition = null;
+    let isListening = false;
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('show');
+      setTimeout(() => errorMsg.classList.remove('show'), 4000);
+    }
+
+    function getRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        showError('当前浏览器不支持语音识别，请使用 Chrome / Edge / Safari');
+        return null;
+      }
+      return new SpeechRecognition();
+    }
+
+    function initRecognition() {
+      if (recognition) return;
+
+      const SR = getRecognition();
+      if (!SR) return;
+
+      recognition = SR;
+      recognition.lang = 'zh-CN';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript = transcript;
+          }
+        }
+
+        if (finalTranscript) {
+          const current = textContent.innerText.trim();
+          textContent.innerText = current ? current + ' ' + finalTranscript : finalTranscript;
+          textContent.scrollTop = textContent.scrollHeight;
+        }
+      };
+
+      recognition.onerror = (event) => {
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          showError('识别出错: ' + event.error);
+        }
+        stopListening();
+      };
+
+      recognition.onend = () => {
+        if (isListening) {
+          try { recognition.start(); } catch (e) { stopListening(); }
+        }
+      };
+    }
+
+    function startListening() {
+      initRecognition();
+      if (!recognition) return;
+
+      try {
+        recognition.start();
+        isListening = true;
+        micBtn.classList.add('listening');
+        status.classList.add('listening');
+        statusText.textContent = '正在聆听...';
+      } catch (e) {
+        showError('启动语音识别失败');
+      }
+    }
+
+    function stopListening() {
+      isListening = false;
+      if (recognition) {
+        try { recognition.stop(); } catch (e) {}
+      }
+      micBtn.classList.remove('listening');
+      status.classList.remove('listening');
+      statusText.textContent = '点击麦克风开始识别';
+    }
+
+    micBtn.addEventListener('click', () => {
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
+      }
+    });
+
+    copyBtn.addEventListener('click', () => {
+      const text = textContent.innerText.trim();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const original = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> 已复制';
+        setTimeout(() => { copyBtn.innerHTML = original; }, 2000);
+      });
+    });
+
+    clearBtn.addEventListener('click', () => {
+      textContent.innerText = '';
+    });
+  </script>
+</body>
+</html>
