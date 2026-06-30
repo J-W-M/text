@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星空下的约定 - 视觉小说</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="background-layer"></div>
+        
+        <div id="character-layer">
+            <div id="character-left" class="character"></div>
+            <div id="character-center" class="character"></div>
+            <div id="character-right" class="character"></div>
+        </div>
+        
+        <div id="dialog-box">
+            <div id="speaker-name"></div>
+            <div id="dialog-text"></div>
+            <div id="click-indicator">▼</div>
+        </div>
+        
+        <div id="choice-container"></div>
+        
+        <div id="title-screen">
+            <h1 class="game-title">星空下的约定</h1>
+            <p class="game-subtitle">~ The Promise Under the Stars ~</p>
+            <button id="start-btn" class="menu-btn">开始游戏</button>
+            <button id="load-btn" class="menu-btn">继续游戏</button>
+            <button id="about-btn" class="menu-btn">关于</button>
+        </div>
+        
+        <div id="about-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>关于游戏</h2>
+                <p>《星空下的约定》是一款经典视觉小说游戏。</p>
+                <p>在那个繁星闪烁的夏夜，你与她许下了怎样的约定？</p>
+                <p>点击屏幕或按空格键推进剧情。</p>
+                <button id="close-about" class="menu-btn">返回</button>
+            </div>
+        </div>
+        
+        <div id="ui-layer">
+            <button id="menu-btn" class="ui-btn hidden" title="菜单">☰</button>
+            <button id="save-btn" class="ui-btn hidden" title="保存">💾</button>
+        </div>
+        
+        <div id="game-menu" class="modal hidden">
+            <div class="modal-content">
+                <h2>游戏菜单</h2>
+                <button id="resume-btn" class="menu-btn">继续游戏</button>
+                <button id="quick-save-btn" class="menu-btn">快速保存</button>
+                <button id="quick-load-btn" class="menu-btn">快速读取</button>
+                <button id="return-title-btn" class="menu-btn">返回标题</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
