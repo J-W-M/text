@@ -10,6 +10,7 @@ import {
   Register,
   Profile,
   Community,
+  VisualNovel,
 } from '@/pages';
 
 // 页面切换动画配置
@@ -122,6 +123,7 @@ function RouteContent() {
             </AnimatedPage>
           }
         />
+        <Route path="/visual-novel" element={<VisualNovel />} />
         {/* 404页面 */}
         <Route
           path="*"
@@ -144,24 +146,34 @@ function RouteContent() {
   );
 }
 
+function AppLayout() {
+  const location = useLocation();
+  const isVisualNovel = location.pathname === '/visual-novel';
+
+  if (isVisualNovel) {
+    return <RouteContent />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-dark relative">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-gradient-radial from-primary/5 to-transparent" />
+        <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-gold/5 to-transparent" />
+      </div>
+
+      <Navbar />
+
+      <main className="relative">
+        <RouteContent />
+      </main>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-dark relative">
-        {/* 全局背景装饰 */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-gradient-radial from-primary/5 to-transparent" />
-          <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-gradient-radial from-gold/5 to-transparent" />
-        </div>
-
-        {/* 导航栏 */}
-        <Navbar />
-
-        {/* 页面内容 */}
-        <main className="relative">
-          <RouteContent />
-        </main>
-      </div>
+      <AppLayout />
     </Router>
   );
 }
